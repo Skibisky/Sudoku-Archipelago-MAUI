@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Sudoku_Archipelago_MAUI.MainPage"
+			 Appearing="ContentPage_Appearing"
+			 >
+
+	<ScrollView>
+		<VerticalStackLayout
+            Spacing="25"
+            Padding="30,0"
+            VerticalOptions="Center">
+
+			<Image
+                Source="icon.png"
+                HeightRequest="200"
+                HorizontalOptions="Center" />
+
+			<Label
+                Text="Sudoku for Archipelago"
+                SemanticProperties.HeadingLevel="Level1"
+                FontSize="32"
+                HorizontalOptions="Center" />
+
+			<Label
+                Text="Welcome to Sudoku for Archipelago .Net MAUI"
+                SemanticProperties.HeadingLevel="Level2"
+                FontSize="18"
+                HorizontalOptions="Center" />
+
+			<StackLayout Orientation="Horizontal">
+				<Label Text="Game Room URI" Padding="10, 0"/>
+				<Entry 
+				x:Name="ServerAddressEntry"
+				Placeholder="Server"
+				HorizontalOptions="FillAndExpand"
+					ReturnType="Next"
+					Completed="ServerAddressEntry_Completed"/>
+			</StackLayout>
+
+			<StackLayout Orientation="Horizontal">
+				<Label Text="Slot to Connect To" />
+				<Entry 
+				x:Name="PlayerNameEntry"
+				Placeholder="Name"
+					HorizontalOptions="FillAndExpand"
+					ReturnType="Go"
+					Completed="OnConnectClicked"
+					/>
+			</StackLayout>
+
+			<Picker Title="Difficulty" x:Name="difficultyPicker" SelectedIndex="0">
+				<Picker.Items>
+					<x:String>Easy</x:String>
+					<x:String>Medium</x:String>
+					<x:String>Hard</x:String>
+				</Picker.Items>
+			</Picker>
+			
+			<HorizontalStackLayout>
+				<Label Text="Deathlink" />
+				<CheckBox x:Name="DeathlinkCheck"/>
+			</HorizontalStackLayout>
+
+			<Button 
+				x:Name="ConnectButton"
+				Text="Connect"
+				Clicked="OnConnectClicked"/>
+
+		</VerticalStackLayout>
+	</ScrollView>
+
+</ContentPage>
