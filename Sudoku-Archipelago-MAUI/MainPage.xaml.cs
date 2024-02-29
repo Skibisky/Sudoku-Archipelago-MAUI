@@ -32,7 +32,7 @@ public partial class MainPage : ContentPage
 
                 var session = ArchipelagoSessionFactory.CreateSession(serverUri);
                 var result = session.TryConnectAndLogin("", pName, ItemsHandlingFlags.NoItems,
-                    tags: new[] { "BK_Sudoku", "TextOnly" });
+                    tags: new[] { "BK_Sudoku", "TextOnly" }, requestSlotData: false);
 
                 if (result.Successful) {
                     await SecureStorage.Default.SetAsync("serveruri", serverUri);
@@ -54,7 +54,12 @@ public partial class MainPage : ContentPage
                     await Navigation.PushAsync(new SudokuPage(session, DeathlinkCheck.IsChecked, hints));
                 }
                 else {
-                    await DisplayAlert("Error", "Connect failed", "OK");
+                    string failures = "";
+                    if (result is LoginFailure f) {
+                        failures = string.Join("\n", f.Errors);
+                    }
+
+                    await DisplayAlert("Error", $"Connect to {serverUri} as {pName} failed:\n" + failures, "OK");
                 }
             }
         }

@@ -1,5 +1,6 @@
 using Archipelago.MultiClient.Net.BounceFeatures.DeathLink;
 using Archipelago.MultiClient.Net;
+using Archipelago.MultiClient.Net.MessageLog.Messages;
 using Archipelago.MultiClient.Net.Helpers;
 using SudokuSpice.RuleBased;
 using Archipelago.MultiClient.Net.Enums;
