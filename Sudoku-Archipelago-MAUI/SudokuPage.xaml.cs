@@ -273,13 +273,6 @@ public partial class SudokuPage : ContentPage
                 foreach (var part in hintMessage.Parts)
                     LogWriteNoLine(part.Text, ToSystemColor(part.Color));
                 LogWriteLine();
-
-                await session.DataStorage[Scope.Slot, PreviouslyHintedLocations].GetAsync<long[]>()
-                    .ContinueWith(t =>
-                    {
-                        if (!t.Result.Contains(hintMessage.Item.Location))
-                            session.DataStorage[Scope.Slot, PreviouslyHintedLocations] += new[] { hintMessage.Item.Location };
-                    });
                 break;
 
             case ItemSendLogMessage itemMessage when itemMessage.Item.Flags == ItemFlags.Advancement
