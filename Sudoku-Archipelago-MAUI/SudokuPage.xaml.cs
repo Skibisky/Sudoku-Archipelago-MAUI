@@ -22,11 +22,15 @@ public partial class SudokuPage : ContentPage
     private bool DeathlinkOn;
     private int numberOfHints;
 
+    private Timer connectionChecker;
+
     public SudokuPage(ArchipelagoSession sess, bool enableDeathlink, int numClues)    {
         InitializeComponent();
 
         session = sess;
         session.MessageLog.OnMessageReceived += MessageLog_OnMessageReceived;
+        session.Socket.ErrorReceived += Socket_ErrorReceived;
+        session.Socket.SocketClosed += Socket_SocketClosed;
 
         DeathlinkOn = enableDeathlink;
         numberOfHints = numClues;
@@ -39,7 +43,68 @@ public partial class SudokuPage : ContentPage
         else
             deathLinkService.DisableDeathLink();
 
+        connectionChecker = new Timer(checkConnection, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+        ReconnectButton.IsVisible = false;
+
         makeGrid();
+    }
+
+    private async void checkConnection(object state)
+    {
+        if (session.Socket.Connected)
+            return;
+
+        ReconnectButton.Dispatcher.Dispatch(() =>
+        {
+            ReconnectButton.IsVisible = true;
+        });
+        connectionChecker.Change(Timeout.InfiniteTimeSpan, TimeSpan.FromSeconds(60));
+    }
+
+    private async void ReconnectButton_Clicked(object sender, EventArgs e)
+    {
+        ReconnectButton.IsEnabled = false;
+        try
+        {
+            var serverUri = await SecureStorage.Default.GetAsync("serveruri");
+            var pName = await SecureStorage.Default.GetAsync("playername");
+
+            var result = session.TryConnectAndLogin("", pName, ItemsHandlingFlags.NoItems,
+                tags: new[] { "BK_Sudoku", "TextOnly" }, requestSlotData: true);
+
+            if (result.Successful)
+            {
+                ReconnectButton.IsVisible = false;
+                connectionChecker.Change(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+            }
+            else
+            {
+                string failures = "";
+                if (result is LoginFailure lf)
+                {
+                    failures = string.Join("\n", lf.Errors);
+                }
+                await DisplayAlert("Error", $"Connect to {serverUri} as {pName} failed:\n" + failures, "OK");
+            }
+        }
+        finally
+        {
+            ReconnectButton.IsEnabled = true;
+        }
+
+    }
+
+    private void Socket_SocketClosed(string reason)
+    {
+        // ShowMessage("Socket Closed", reason, "cancel", Colors.Black)
+        DisplayAlert("Socket Closed", reason, "ok")
+            .ContinueWith(a => Navigation.PopAsync());
+    }
+
+    private void Socket_ErrorReceived(Exception e, string message)
+    {
+        DisplayAlert("Error Received", message + "\n" + e, "ok")
+            .ContinueWith(a => Navigation.PopAsync());
     }
 
     private void makeGrid()
@@ -204,7 +269,7 @@ public partial class SudokuPage : ContentPage
     private async void MessageLog_OnMessageReceived(LogMessage message)
     {
         switch (message) {
-            case HintItemSendLogMessage hintMessage when hintMessage.SendingPlayerSlot == session.ConnectionInfo.Slot:
+            case HintItemSendLogMessage hintMessage when hintMessage.Sender.Slot == session.ConnectionInfo.Slot:
                 foreach (var part in hintMessage.Parts)
                     LogWriteNoLine(part.Text, ToSystemColor(part.Color));
                 LogWriteLine();
@@ -218,7 +283,7 @@ public partial class SudokuPage : ContentPage
                 break;
 
             case ItemSendLogMessage itemMessage when itemMessage.Item.Flags == ItemFlags.Advancement
-                                                         && itemMessage.ReceivingPlayerSlot == session.ConnectionInfo.Slot:
+                                                         && itemMessage.Receiver.Slot == session.ConnectionInfo.Slot:
                 foreach (var part in itemMessage.Parts)
                     LogWriteNoLine(part.Text, ToSystemColor(part.Color));
                 LogWriteLine();
@@ -296,7 +361,15 @@ public partial class SudokuPage : ContentPage
                     didWin = true;
                     
                     var missing = session.Locations.AllMissingLocations;
-                    var alreadyHinted = session.DataStorage[Scope.Slot, PreviouslyHintedLocations].To<long[]>();
+                    // var alreadyHinted = session.DataStorage[Scope.Slot, PreviouslyHintedLocations].To<long[]>();
+                    var alreadyHinted = (await session.DataStorage.GetHintsAsync(session.ConnectionInfo.Slot))
+                        ?.Where(h => h.FindingPlayer == session.ConnectionInfo.Slot)?.Select(h => h.LocationId);
+
+                    if (alreadyHinted == null)
+                    {
+                        await ShowMessage("Failed", "I was unable to find the already hinted locatons.", "Oh", Colors.Red);
+                        return;
+                    }
 
                     var availableForHinting = missing.Except(alreadyHinted).ToArray();
 
@@ -312,8 +385,14 @@ public partial class SudokuPage : ContentPage
                 }
                 else {
                     await ShowMessage("Result", "Correct, no hints are unlocked as you are not connected", "Oof", Colors.Blue);
+                    ReconnectButton.IsVisible = true;
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error!", "Error during submit: \n" + ex, "ok")
+                .ContinueWith(a => Navigation.PopAsync());
         }
         finally {
             CheckButton.IsEnabled = !didWin;

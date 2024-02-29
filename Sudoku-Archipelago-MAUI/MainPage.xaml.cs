@@ -32,7 +32,7 @@ public partial class MainPage : ContentPage
 
                 var session = ArchipelagoSessionFactory.CreateSession(serverUri);
                 var result = session.TryConnectAndLogin("", pName, ItemsHandlingFlags.NoItems,
-                    tags: new[] { "BK_Sudoku", "TextOnly" }, requestSlotData: false);
+                    tags: new[] { "BK_Sudoku", "TextOnly" }, requestSlotData: true);
 
                 if (result.Successful) {
                     await SecureStorage.Default.SetAsync("serveruri", serverUri);

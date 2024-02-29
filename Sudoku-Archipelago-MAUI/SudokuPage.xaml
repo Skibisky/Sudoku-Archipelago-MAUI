@@ -42,13 +42,18 @@
 			Text="New Game"
 			Clicked="NewButton_Clicked"
 			/>
-		<Button
-			x:Name="LogoutButton"
-			Text="Disconnect"
-			Clicked="LogoutButton_Clicked"
-			/>
-		
-		<ScrollView x:Name="LogScroll" HeightRequest="100">
+        <Button
+            x:Name="LogoutButton"
+            Text="Disconnect"
+            Clicked="LogoutButton_Clicked"
+        />
+        <Button
+            x:Name="ReconnectButton"
+            Text="Reconnect"
+            Clicked="ReconnectButton_Clicked"
+        />
+
+        <ScrollView x:Name="LogScroll" HeightRequest="100">
 			<VerticalStackLayout x:Name="LogStack">
 				<Label x:Name="LogLabel"/>
 			</VerticalStackLayout>
